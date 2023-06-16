@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import {Button, Container, Grid, TextField} from "@mui/material";
+import {Button, CircularProgress, Container, Grid, TextField} from "@mui/material";
 import {performOperation} from "../helpers/functions";
 import {getCollection} from "../helpers/firestore";
 import {Operation, OperationRequest} from "../shared/Operation"
@@ -10,11 +10,13 @@ const Calculator = () => {
     const [operand2, setOperand2] = useState('');
     const [result, setResult] = useState<string>();
     const [operations, setOperations] = useState<Operation[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         async function fetch() {
             const ops = (await getCollection('operation')) as Operation[]
             setOperations(ops)
+            setLoading(false)
         }
 
         fetch()
@@ -31,11 +33,13 @@ const Calculator = () => {
 
 
     const handleOperation = async (operation) => {
+        setLoading(true)
         const operationRequest: OperationRequest = {operationId: operation.id};
         if (operand1.length) operationRequest.operand1 = Number(operand1);
         if (operand2.length) operationRequest.operand2 = Number(operand2);
         const {error, data} = await performOperation(operationRequest);
         setResult(error ?? (data as string))
+        setLoading(false)
     };
 
 
@@ -63,12 +67,13 @@ const Calculator = () => {
             </Grid>
             <Grid container gap={2} item xs={12}>
                 {operations.map(o => <Button key={o.type} variant="contained" color="primary"
-                                             onClick={() => handleOperation(o)}>
+                                             onClick={() => handleOperation(o)} disabled={loading}>
                     {o.type}
                 </Button>)}
 
             </Grid>
-            {result && (<Grid item xs={12}>
+            {loading && <CircularProgress/>}
+            {!loading && result && (<Grid item xs={12}>
                 <TextField
                     label="Result"
                     variant="outlined"
